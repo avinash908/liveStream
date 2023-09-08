@@ -26,6 +26,7 @@ const db_1 = require("./db/db");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT;
+app.use(express_1.default.static("build"));
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
@@ -34,6 +35,10 @@ const options = {
     key: fs_1.default.readFileSync(path_1.default.join(__dirname, config_1.config.sslKey), 'utf-8'),
     cert: fs_1.default.readFileSync(path_1.default.join(__dirname, config_1.config.sslCrt), 'utf-8')
 };
+app.get("*", (req, res) => {
+    res.sendFile('index.html', { root: path_1.default.join(__dirname, '../build/') });
+    // res.sendFile(path.resolve(__dirname,  'build', 'index.html'));
+});
 const server = https_1.default.createServer(options, app);
 const io = new socket_io_1.Server(server, {
     cors: {

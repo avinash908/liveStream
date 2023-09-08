@@ -1,0 +1,27 @@
+{
+  "files": {
+    "main.css": "/static/css/main.641212de.css",
+    "main.js": "/static/js/main.21918161.js",
+    "static/media/user1.webp": "/static/media/user1.8b0cae35f691b88cbf91.webp",
+    "static/media/appLoader.svg": "/static/media/appLoader.1fa24e370c36604c69466d17651f291c.svg",
+    "static/media/img4.webp": "/static/media/img4.f0912d34fff0767c0936.webp",
+    "static/media/img3.webp": "/static/media/img3.d2ef3230961975c9be47.webp",
+    "static/media/img2.webp": "/static/media/img2.c109355009d07c7eb124.webp",
+    "static/media/img1.webp": "/static/media/img1.8c74113180029a4d9c62.webp",
+    "static/media/television.svg": "/static/media/television.b46de74fd50bd7c4bafd0a615354c062.svg",
+    "index.html": "/index.html",
+    "static/media/game.svg": "/static/media/game.062334155c947c3177b1e19f012c9416.svg",
+    "static/media/celebrity.svg": "/static/media/celebrity.85aab48005e477f930d5152db8982272.svg",
+    "static/media/crypto.svg": "/static/media/crypto.a837aa1e32b69789c150a8b1f045b036.svg",
+    "static/media/home.svg": "/static/media/home.0d90b9e1d116888a14a46b55e240f918.svg",
+    "static/media/sport.svg": "/static/media/sport.4e3468e6dd2d7feefd82103ac00fdb6d.svg",
+    "static/media/popular.svg": "/static/media/popular.b5418d160383a7d54a85cde5c483ea7d.svg",
+    "static/media/business.svg": "/static/media/business.f6c879baddd57e9ad1e2197a58a9eafa.svg",
+    "main.641212de.css.map": "/static/css/main.641212de.css.map",
+    "main.21918161.js.map": "/static/js/main.21918161.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.641212de.css",
+    "static/js/main.21918161.js"
+  ]
+}
