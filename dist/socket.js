@@ -37,6 +37,7 @@ const room_1 = require("./room");
 const config_1 = require("./config");
 const mediasoup = __importStar(require("mediasoup"));
 const peer_1 = require("./peer");
+const post_1 = require("./model/post");
 var users = new Map();
 var rooms = new Map();
 // all mediasoup workers
@@ -158,14 +159,14 @@ const socketServer = (io) => {
             yield ((_g = rooms.get(id)) === null || _g === void 0 ? void 0 : _g.connectPeerTransport(socket.id, transportId, dtlsParameters));
             cb();
         }));
-        socket.on("produce", ({ kind, rtpParameters, producerTransportId, id }, cb) => __awaiter(void 0, void 0, void 0, function* () {
+        socket.on("produce", ({ kind, rtpParameters, producerTransportId, id, appData }, cb) => __awaiter(void 0, void 0, void 0, function* () {
             var _h, _j, _k;
             if (!rooms.has(id)) {
                 return cb({
                     message: 'Room not longer the open'
                 }, null);
             }
-            let producer_id = yield ((_h = rooms.get(id)) === null || _h === void 0 ? void 0 : _h.produce(socket.id, producerTransportId, rtpParameters, kind, id));
+            let producer_id = yield ((_h = rooms.get(id)) === null || _h === void 0 ? void 0 : _h.produce(socket.id, producerTransportId, rtpParameters, kind, id, appData));
             console.log('Produce', {
                 type: `${kind}`,
                 name: `${(_k = (_j = rooms.get(id)) === null || _j === void 0 ? void 0 : _j.getPeers().get(socket.id)) === null || _k === void 0 ? void 0 : _k.name}`,
@@ -173,13 +174,17 @@ const socketServer = (io) => {
             });
             cb(null, { id: producer_id });
         }));
-        socket.on('consume', ({ rtpCapabilities, consumerTransportId, producerId, roomId }, callback) => __awaiter(void 0, void 0, void 0, function* () {
-            var _l;
+        socket.on('consume', ({ rtpCapabilities, consumerTransportId, producerId, roomId, appData, id }, callback) => __awaiter(void 0, void 0, void 0, function* () {
+            var _l, _m, _o;
             if (!rooms.has(roomId)) {
                 return callback({ error: 'Room not found' }, null);
             }
-            let params = yield ((_l = rooms
-                .get(roomId)) === null || _l === void 0 ? void 0 : _l.consume(socket.id, consumerTransportId, producerId, rtpCapabilities));
+            let produce = yield ((_m = (_l = rooms.get(roomId)) === null || _l === void 0 ? void 0 : _l.getPeers().get(id)) === null || _m === void 0 ? void 0 : _m.getProducer(producerId));
+            // console.log(produce)
+            if (produce == null)
+                return callback({ error: 'Room not found' }, null);
+            let params = yield ((_o = rooms
+                .get(roomId)) === null || _o === void 0 ? void 0 : _o.consume(socket.id, consumerTransportId, producerId, rtpCapabilities, { type: produce.appData.type == "scree-share" ? "scree-share" : "video" }));
             console.log('Consuming', {
                 peer_id: socket.id,
                 producer_id: producerId,
@@ -230,11 +235,21 @@ const socketServer = (io) => {
                 socket.to(id).emit("requsetAccepted", { isAdmin: true, roomId1: socket.data.roomId });
             }
         });
+        socket.on("startRecording", (_) => {
+            var _a;
+            (_a = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _a === void 0 ? void 0 : _a.handleStartRecording(socket.data.roomId, socket.id);
+            console.log("Starte Recording");
+        });
+        socket.on("stopRecording", (_) => {
+            var _a;
+            (_a = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _a === void 0 ? void 0 : _a.stopMediasoupRtp({ useAudio: true, useVideo: true });
+            console.log("Starte Recording");
+        });
         socket.on("liveEnd", (_, callback) => __awaiter(void 0, void 0, void 0, function* () {
-            var _m, _o, _p, _q;
+            var _p, _q, _r, _s;
             console.log(socket.data.roomId);
             console.log('Exit room', {
-                name: `${(rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) && ((_m = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _m === void 0 ? void 0 : _m.getPeers().get(socket.id))}`
+                name: `${(rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) && ((_p = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _p === void 0 ? void 0 : _p.getPeers().get(socket.id))}`
             });
             if (!(rooms === null || rooms === void 0 ? void 0 : rooms.has(socket.data.roomId))) {
                 callback({
@@ -242,15 +257,20 @@ const socketServer = (io) => {
                 });
                 return;
             }
-            for (let first of (_o = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _o === void 0 ? void 0 : _o.getPeers().entries()) {
-                yield ((_p = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _p === void 0 ? void 0 : _p.removePeer(first[0]));
+            for (let first of (_q = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _q === void 0 ? void 0 : _q.getPeers().entries()) {
+                yield ((_r = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _r === void 0 ? void 0 : _r.removePeer(first[0]));
                 io.to(first[0]).emit("liveEnded", "live Stream ended");
             }
             // close transports
-            // await rooms?.get(socket.data.roomId)?.removePeer(socket.id)
-            if (((_q = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _q === void 0 ? void 0 : _q.getPeers().size) === 0) {
+            var room = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId);
+            console.log(room);
+            if (((_s = rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) === null || _s === void 0 ? void 0 : _s.getPeers().size) === 0) {
                 rooms.delete(socket.data.roomId);
             }
+            // const post = await Post.findById(socket.data.roomId);
+            yield post_1.Post.findByIdAndUpdate(socket.data.roomId, { $set: { isLive: false } }, { new: true }).then((v) => {
+                console.log(v === null || v === void 0 ? void 0 : v._id);
+            }).catch(e => console.log("UpdateError=>", e));
             socket.data.roomId = null;
             callback('successfully exited room');
         }));

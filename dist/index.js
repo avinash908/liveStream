@@ -28,8 +28,8 @@ const app = (0, express_1.default)();
 const port = process.env.PORT;
 app.use(express_1.default.static("build"));
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
+app.use(express_1.default.json({ limit: '50mb' }));
+app.use(express_1.default.urlencoded({ extended: true, limit: 100000 }));
 app.use("/api/v1", router_1.mainRouter);
 const options = {
     key: fs_1.default.readFileSync(path_1.default.join(__dirname, config_1.config.sslKey), 'utf-8'),

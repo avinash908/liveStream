@@ -50,16 +50,23 @@ exports.config = {
                 {
                     kind: 'audio',
                     mimeType: 'audio/opus',
+                    preferredPayloadType: 111,
                     clockRate: 48000,
-                    channels: 2
+                    channels: 2,
+                    parameters: {
+                        minptime: 10,
+                        useinbandfec: 1,
+                    },
                 },
                 {
-                    kind: 'video',
-                    mimeType: 'video/VP8',
+                    kind: "video",
+                    mimeType: "video/VP8",
+                    preferredPayloadType: 96,
                     clockRate: 90000,
-                    parameters: {
-                        'x-google-start-bitrate': 1000
-                    }
+                    // parameters:
+                    // {
+                    //   'x-google-start-bitrate': 1000
+                    // }
                 },
                 {
                     kind: 'video',
@@ -132,6 +139,14 @@ exports.config = {
                 announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || getLocalIp(), //"|| '3.85.47.74'",,
             },
             maxSctpMessageSize: 262144
-        }
+        },
+        recording: {
+            ip: "127.0.0.1",
+            // GStreamer's sdpdemux only supports RTCP = RTP + 1
+            audioPort: 5004,
+            audioPortRtcp: 5005,
+            videoPort: 5006,
+            videoPortRtcp: 5007,
+        },
     }
 };

@@ -23,11 +23,12 @@ export class Peer {
         console.log("Transport Connected...");
     }
 
-    async createProducer(producerTransportId: string, rtpParameters: any, kind: any) {
+    async createProducer(producerTransportId: string, rtpParameters: any, kind: any, appData: any) {
         //TODO handle null errors
         let producer = await this.transports!.get(producerTransportId)?.produce({
             kind,
-            rtpParameters
+            rtpParameters,
+            appData: appData
         })
 
         this.producers.set(producer!.id, producer)
@@ -43,12 +44,13 @@ export class Peer {
         return producer
     }
 
-    async createConsumer(consumer_transport_id: any, producer_id: any, rtpCapabilities: any) {
+    async createConsumer(consumer_transport_id: any, producer_id: any, rtpCapabilities: any,appData:any) {
         let consumerTransport = this.transports.get(consumer_transport_id)
 
         let consumer = null
         try {
             consumer = await consumerTransport?.consume({
+                appData: appData,
                 producerId: producer_id,
                 rtpCapabilities,
                 paused: false //producer.kind === 'video',
@@ -82,13 +84,14 @@ export class Peer {
                 kind: consumer!.kind,
                 rtpParameters: consumer!.rtpParameters,
                 type: consumer!.type,
-                producerPaused: consumer!.producerPaused
+                producerPaused: consumer!.producerPaused,
+                appData
             }
         }
     }
 
-    updateAdmin(isAdmin:boolean){
-        this.isAdmin=isAdmin;
+    updateAdmin(isAdmin: boolean) {
+        this.isAdmin = isAdmin;
         return this.isAdmin;
     }
 
@@ -102,7 +105,7 @@ export class Peer {
         this.producers.delete(producer_id)
     }
 
-    getProducer(producer_id:any) {
+    getProducer(producer_id: any) {
         return this.producers.get(producer_id)
     }
 

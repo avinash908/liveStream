@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { userRouter } from './user';
 import { countryRouter } from './country';
 import { categoryRouter } from './category';
-
+import { postRouter } from './post';
 const mainRouter: Router = Router();
 
 mainRouter.get("/", (req: Request, res: Response) => {
@@ -12,12 +12,8 @@ mainRouter.get("/", (req: Request, res: Response) => {
         message: "Live Stream Server is Running..."
     });
 });
-
 mainRouter.use("/users", userRouter);
 mainRouter.use("/countries", countryRouter);
 mainRouter.use("/category", categoryRouter);
-
-
-
-
+mainRouter.use("/post", postRouter);
 export { mainRouter };

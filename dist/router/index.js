@@ -5,6 +5,7 @@ const express_1 = require("express");
 const user_1 = require("./user");
 const country_1 = require("./country");
 const category_1 = require("./category");
+const post_1 = require("./post");
 const mainRouter = (0, express_1.Router)();
 exports.mainRouter = mainRouter;
 mainRouter.get("/", (req, res) => {
@@ -17,3 +18,4 @@ mainRouter.get("/", (req, res) => {
 mainRouter.use("/users", user_1.userRouter);
 mainRouter.use("/countries", country_1.countryRouter);
 mainRouter.use("/category", category_1.categoryRouter);
+mainRouter.use("/post", post_1.postRouter);

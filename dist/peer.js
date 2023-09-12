@@ -32,13 +32,14 @@ class Peer {
             console.log("Transport Connected...");
         });
     }
-    createProducer(producerTransportId, rtpParameters, kind) {
+    createProducer(producerTransportId, rtpParameters, kind, appData) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             //TODO handle null errors
             let producer = yield ((_a = this.transports.get(producerTransportId)) === null || _a === void 0 ? void 0 : _a.produce({
                 kind,
-                rtpParameters
+                rtpParameters,
+                appData: appData
             }));
             this.producers.set(producer.id, producer);
             producer.on('transportclose', () => {
@@ -49,12 +50,13 @@ class Peer {
             return producer;
         });
     }
-    createConsumer(consumer_transport_id, producer_id, rtpCapabilities) {
+    createConsumer(consumer_transport_id, producer_id, rtpCapabilities, appData) {
         return __awaiter(this, void 0, void 0, function* () {
             let consumerTransport = this.transports.get(consumer_transport_id);
             let consumer = null;
             try {
                 consumer = yield (consumerTransport === null || consumerTransport === void 0 ? void 0 : consumerTransport.consume({
+                    appData: appData,
                     producerId: producer_id,
                     rtpCapabilities,
                     paused: false //producer.kind === 'video',
@@ -83,7 +85,8 @@ class Peer {
                     kind: consumer.kind,
                     rtpParameters: consumer.rtpParameters,
                     type: consumer.type,
-                    producerPaused: consumer.producerPaused
+                    producerPaused: consumer.producerPaused,
+                    appData
                 }
             };
         });

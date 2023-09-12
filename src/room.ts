@@ -1,8 +1,9 @@
 import { types } from 'mediasoup';
 import { Server } from 'socket.io';
 import { config } from './config';
+import FFmpeg from './ffmpeg';
 import { Peer } from './peer';
-
+import { Post } from './model/post';
 
 export class Room {
     id: string | null = null;
@@ -10,6 +11,11 @@ export class Room {
     io: Server | null = null;
     peers: Map<string, Peer> = new Map();
     webRtcServer: any = null;
+    audioConsumer: types.Consumer | null = null;
+    videoConsumer: types.Consumer | null = null;
+    audioTransport: types.PlainTransport | null = null;
+    videoTransport: types.PlainTransport | null = null;
+    processFFmpeg: FFmpeg | null = null;
     constructor(id: string, worker: types.Worker, io: Server) {
         this.id = id;
         this.io = io;
@@ -112,11 +118,11 @@ export class Room {
         await this.peers!.get(id)?.connectTransport(transportId, dtlsParameters)
     }
 
-    async produce(id: string, producerTransportId: string, rtpParameters: any, kind: any, roomId: string) {
+    async produce(id: string, producerTransportId: string, rtpParameters: any, kind: any, roomId: string, appData: any) {
         // handle undefined errors
         return new Promise(
             async (resolve: any, reject: any) => {
-                let producer = await this.peers!.get(id)?.createProducer(producerTransportId, rtpParameters, kind)
+                let producer = await this.peers!.get(id)?.createProducer(producerTransportId, rtpParameters, kind, appData)
                 resolve(producer!.id)
                 this.broadcast(id, 'newProducers',
                     {
@@ -136,6 +142,7 @@ export class Room {
         consumerTransportId: string,
         producerId: string,
         rtpCapabilities: types.RtpCapabilities,
+        appData: any
     ) {
         if (
             !this.router ||
@@ -149,7 +156,7 @@ export class Room {
         }
         const consumer = await this.peers
             .get(socketId)
-            ?.createConsumer(consumerTransportId, producerId, rtpCapabilities);
+            ?.createConsumer(consumerTransportId, producerId, rtpCapabilities, appData);
 
         if (!consumer) {
             console.error('consumer not found');
@@ -212,4 +219,134 @@ export class Room {
             peers: JSON.stringify([...this.peers])
         }
     }
+
+
+
+
+
+    async handleStartRecording(roomId: string, id: string) {
+        let producer = this.peers!.get(id);
+        let recordInfo: any = {};
+        var isVideo = false;
+        var isAudio = false;
+        var pId;
+        var pvId;
+        producer?.producers.forEach(async (v: types.Producer) => {
+            console.log(v.appData);
+            // if (v.appData.type == "scree-share" && v.kind=="video") {
+            //     pvId = v.id;
+            //     isVideo = true;
+            // }
+            if (v.appData.type == "scree-share" && v.kind == "audio") {
+                isAudio = true;
+                pId = v.id;
+            } else if (v.appData.type == "scree-share" && v.kind == "video") {
+                isVideo = true;
+                pvId = v.id;
+            }
+        });
+        recordInfo.fileName = Date.now().toString();
+        if (isAudio) {
+            const rtpTransport = await this.router?.createPlainTransport({
+                rtcpMux: false,
+                comedia: false,
+                ...config.mediasoup.plainTransportOptions,
+            });
+            await rtpTransport?.connect({
+                ip: '127.0.0.1',
+                port: config.mediasoup.recording.audioPort,
+                rtcpPort: config.mediasoup.recording.audioPortRtcp
+            });
+            this.audioTransport = rtpTransport!;
+            const codecs = [];
+            const routerCodec = this.router!.rtpCapabilities!.codecs?.find(
+                codec => codec.kind === "audio"
+            );
+            codecs.push(routerCodec);
+            const rtpConsumer = await rtpTransport?.consume({
+                producerId: pId!,
+                rtpCapabilities: {
+                    codecs: codecs.map(v => v!),
+                },
+                paused: true
+            });
+            this.audioConsumer = rtpConsumer!;
+            recordInfo["audio"] = {
+                remoteRtpPort: config.mediasoup.recording.audioPort,
+                remoteRtcpPort: config.mediasoup.recording.audioPortRtcp,
+                localRtcpPort: rtpTransport!.rtcpTuple ? rtpTransport!.rtcpTuple.localPort : undefined,
+                rtpCapabilities: {
+                    codecs: codecs.map(v => v!),
+                },
+                rtpParameters: rtpConsumer!.rtpParameters
+            }
+        }
+        if (isVideo) {
+            const rtpTransport = await this.router?.createPlainTransport({
+                rtcpMux: false,
+                comedia: false,
+                ...config.mediasoup.plainTransportOptions,
+            });
+            await rtpTransport?.connect({
+                ip: '127.0.0.1',
+                port: config.mediasoup.recording.videoPort,
+                rtcpPort: config.mediasoup.recording.videoPort
+            });
+            this.videoTransport = rtpTransport!;
+            const codecs = [];
+            const routerCodec = this.router!.rtpCapabilities!.codecs?.find(
+                codec => codec.kind === "video"
+            );
+            codecs.push(routerCodec);
+            const rtpConsumer = await rtpTransport?.consume({
+                producerId: pvId!,
+                rtpCapabilities: {
+                    codecs: this.router!.rtpCapabilities!.codecs,
+                },
+                paused: true
+            });
+            this.videoConsumer = rtpConsumer!;
+            recordInfo["video"] = {
+                remoteRtpPort: config.mediasoup.recording.videoPort,
+                remoteRtcpPort: config.mediasoup.recording.videoPortRtcp,
+                localRtcpPort: rtpTransport!.rtcpTuple ? rtpTransport!.rtcpTuple.localPort : undefined,
+                rtpCapabilities: {
+                    codecs: codecs.map(v => v!),
+                },
+                rtpParameters: rtpConsumer!.rtpParameters
+            }
+        }
+        console.log(recordInfo);
+        this.processFFmpeg = new FFmpeg(recordInfo);
+        this.processFFmpeg!.observer?.on("process-close", () => {
+            console.log("Okddhfgwufwfwfwy")
+        });
+        this.processFFmpeg!.observer?.on("uploaded", async ({ name, isSuccess }) => {
+            console.log(name, isSuccess);
+            if (isSuccess) {
+                await Post.findByIdAndUpdate(roomId, { $set: { recordedUrl: 'https://liverecords.s3.amazonaws.com/' + name } }, { new: true }).then((v) => {
+                    console.log(v?._id);
+                }).catch(e => console.log("UpdateError=>", e));
+            }
+        })
+        setTimeout(async () => {
+            await this.videoConsumer?.resume();
+            await this.videoConsumer?.requestKeyFrame();
+            await this.audioConsumer?.resume();
+            await this.audioConsumer?.requestKeyFrame();
+        }, 1000);
+    }
+    stopMediasoupRtp({ useAudio, useVideo }: any) {
+        console.log("Stop mediasoup RTP transport and consumer");
+        this.processFFmpeg?.kill();
+        if (useAudio) {
+            this.audioConsumer?.close();
+            this.audioTransport?.close();
+        }
+        if (useVideo) {
+            this.videoConsumer?.close();
+            this.videoTransport?.close();
+        }
+    }
+
 }
