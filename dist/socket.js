@@ -123,8 +123,17 @@ const socketServer = (io) => {
             if (!rooms.has(id))
                 return;
             let producerList = (_a = rooms.get(id)) === null || _a === void 0 ? void 0 : _a.getProducerListForPeer();
-            console.log(producerList);
             socket.emit('newProducers', { producerList, id });
+            if ((rooms === null || rooms === void 0 ? void 0 : rooms.size) > 0) {
+                const mapToArray = [];
+                for (const [key, value] of rooms.entries()) {
+                    mapToArray.push({ key: key, value: value.toJson() });
+                }
+                io.emit("allRooms", JSON.stringify(mapToArray));
+            }
+            else {
+                io.emit("allRooms", null);
+            }
         });
         socket.on("getRouterRtpCapabilities", ({ id }, cb) => __awaiter(void 0, void 0, void 0, function* () {
             var _a;
@@ -233,6 +242,16 @@ const socketServer = (io) => {
             });
             if (rooms === null || rooms === void 0 ? void 0 : rooms.has(socket.data.roomId)) {
                 socket.to(id).emit("requsetAccepted", { isAdmin: true, roomId1: socket.data.roomId });
+            }
+        });
+        socket.on("rejectRequest", ({ id }) => {
+            var _a, _b;
+            console.log('User Requset To Reject', {
+                name: `${(rooms === null || rooms === void 0 ? void 0 : rooms.get(socket.data.roomId)) &&
+                    ((_b = (_a = rooms.get(socket.data.roomId)) === null || _a === void 0 ? void 0 : _a.getPeers().get(id)) === null || _b === void 0 ? void 0 : _b.name)}`,
+            });
+            if (rooms === null || rooms === void 0 ? void 0 : rooms.has(socket.data.roomId)) {
+                socket.to(id).emit("rejectedRequest", { message: "request Rejected by Admin" });
             }
         });
         socket.on("startRecording", (_) => {

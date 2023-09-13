@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllPosts = exports.createPost = void 0;
+exports.getProductByCountry = exports.getAllPosts = exports.createPost = void 0;
 const joi_1 = __importDefault(require("@hapi/joi"));
 const post_1 = require("../model/post");
 const aws_sdk_1 = __importDefault(require("aws-sdk"));
@@ -167,3 +167,6 @@ const getAllPosts = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.getAllPosts = getAllPosts;
+const getProductByCountry = () => {
+};
+exports.getProductByCountry = getProductByCountry;

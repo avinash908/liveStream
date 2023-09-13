@@ -92,8 +92,16 @@ export const socketServer = (io: Server) => {
         socket.on('getProducers', ({ id }) => {
             if (!rooms!.has(id)) return
             let producerList = rooms!.get(id)?.getProducerListForPeer();
-            console.log(producerList);
-            socket.emit('newProducers', { producerList, id })
+            socket.emit('newProducers', { producerList, id });
+            if (rooms?.size! > 0) {
+                const mapToArray = [];
+                for (const [key, value] of rooms!.entries()) {
+                    mapToArray.push({ key: key, value: value.toJson() });
+                }
+                io.emit("allRooms", JSON.stringify(mapToArray));
+            } else {
+                io.emit("allRooms", null);
+            }
         });
         socket.on("getRouterRtpCapabilities", async ({ id }, cb) => {
             printPreeName(id, socket);
@@ -205,6 +213,17 @@ export const socketServer = (io: Server) => {
             });
             if (rooms?.has(socket.data.roomId)) {
                 socket.to(id).emit("requsetAccepted", { isAdmin: true, roomId1: socket.data.roomId });
+            }
+        });
+
+        socket.on("rejectRequest", ({ id }) => {
+            console.log('User Requset To Reject', {
+                name: `${rooms?.get(socket.data.roomId) &&
+                    rooms.get(socket.data.roomId)?.getPeers().get(id)?.name
+                    }`,
+            });
+            if (rooms?.has(socket.data.roomId)) {
+                socket.to(id).emit("rejectedRequest", { message: "request Rejected by Admin" });
             }
         });
 

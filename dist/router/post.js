@@ -7,3 +7,4 @@ const postRouter = (0, express_1.Router)();
 exports.postRouter = postRouter;
 postRouter.post("/create", post_1.createPost);
 postRouter.get("/", post_1.getAllPosts);
+postRouter.get("/searchByCountry", post_1.getProductByCountry);

@@ -59,6 +59,13 @@ class FFmpeg {
                             else {
                                 (_b = this.observer) === null || _b === void 0 ? void 0 : _b.emit("uploaded", { name: this.rtpParameters.fileName + ".webm", isSuccess: true });
                             }
+                            try {
+                                fs_1.default.unlinkSync(coolPath);
+                                console.log("Delete File successfully.");
+                            }
+                            catch (error) {
+                                console.log(error);
+                            }
                         });
                     }
                 }

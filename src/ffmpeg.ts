@@ -53,6 +53,12 @@ class FFmpeg {
                             } else {
                                 this.observer?.emit("uploaded", { name: this.rtpParameters!.fileName + ".webm", isSuccess: true });
                             }
+                            try {
+                                fs.unlinkSync(coolPath);
+                                console.log("Delete File successfully.");
+                            } catch (error) {
+                                console.log(error);
+                            }
                         });
                     }
                 } catch (error) {
